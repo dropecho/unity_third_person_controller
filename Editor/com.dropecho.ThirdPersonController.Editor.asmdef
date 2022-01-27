@@ -1,0 +1,18 @@
+{
+    "name": "com.dropecho.ThirdPersonController.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:e9185d4e86428624fa3e167847cf20e6"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
