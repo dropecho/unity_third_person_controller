@@ -1,9 +1,14 @@
 {
     "name": "com.dropecho.third_person_controller",
     "version": "0.3.1",
-    "displayName": "Third Person Controller",
+    "displayName": "Dropecho Character Controller",
     "description": "A Third Person Controller",
     "author": "Dropecho <vantreeseba@gmail.com>",
     "repository": "github:dropecho/unity_third_person_controller",
-    "license": "MIT"
+    "license": "MIT",
+    "samples": [{
+        "displayName": "Demo",
+        "description": "Contains a simple demo scene to test out character controller.",
+        "path": "Samples~/Demo"
+    }]
 }

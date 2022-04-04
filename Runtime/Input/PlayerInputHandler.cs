@@ -4,7 +4,15 @@ using UnityEngine;
 #endif
 
 namespace Dropecho {
+  public enum InputMode {
+    world = 1,
+    local = 2,
+    camera = 3
+  }
+
   public class PlayerInputHandler : MonoBehaviour {
+    public InputMode inputMode = InputMode.world;
+
 #if ENABLE_INPUT_SYSTEM
     public InputActionReference movement;
     public InputActionReference sprint;
@@ -18,12 +26,13 @@ namespace Dropecho {
     public float movingTurnSpeed = 360;
 
     ICharacterMotor _motor;
-
+    Camera _camera;
     float _forwardModifier = 1;
     Vector2 _input = Vector2.zero;
 
     void Awake() {
       _motor = GetComponent<ICharacterMotor>();
+      _camera = Camera.main;
     }
 
     void OnEnable() {
@@ -52,7 +61,30 @@ namespace Dropecho {
       _input.y = Input.GetAxis(verticalAxis);
       _forwardModifier = Input.GetButton(sprintButton) ? 2f : 1f;
 #endif
-      _motor.Move(_input, _forwardModifier);
+      _motor.Move(ProcessInput(_input), _forwardModifier);
+    }
+
+    Vector2 ProcessInput(Vector2 _input) {
+      return inputMode switch {
+        InputMode.world => _input,
+        InputMode.local => GetLocalRelativeInput(_input),
+        InputMode.camera => GetCameraRelativeInput(_input),
+        _ => Vector2.zero
+      };
+    }
+
+    Vector2 GetLocalRelativeInput(Vector2 input) {
+      // return transform.InverseTransformDirection(new Vector3(input.x, 0, input.y));
+      var localDir = transform.TransformDirection(new Vector3(_input.x, 0, input.y));
+      return new Vector2(localDir.x, localDir.z);
+    }
+
+    Vector2 GetCameraRelativeInput(Vector2 input) {
+      var camFwd = Vector3.ProjectOnPlane(_camera.transform.forward, Vector3.up).normalized;
+      var worldToCamera = Quaternion.FromToRotation(Vector3.forward, camFwd);
+      var relativeDir = worldToCamera * new Vector3(input.x, 0, input.y);
+
+      return new Vector2(relativeDir.x, relativeDir.z);
     }
   }
 }
