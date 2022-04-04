@@ -22,9 +22,6 @@ namespace Dropecho {
     public string sprintButton = "Fire3";
 #endif
 
-    public float stationaryTurnSpeed = 180;
-    public float movingTurnSpeed = 360;
-
     ICharacterMotor _motor;
     Camera _camera;
     float _forwardModifier = 1;
@@ -74,7 +71,6 @@ namespace Dropecho {
     }
 
     Vector2 GetLocalRelativeInput(Vector2 input) {
-      // return transform.InverseTransformDirection(new Vector3(input.x, 0, input.y));
       var localDir = transform.TransformDirection(new Vector3(_input.x, 0, input.y));
       return new Vector2(localDir.x, localDir.z);
     }

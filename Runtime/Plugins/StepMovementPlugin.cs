@@ -2,9 +2,9 @@ using UnityEngine;
 
 namespace Dropecho {
   public class StepMovementPlugin : MonoBehaviour, ICharacterMotorPlugin {
-    [SerializeField] float _stepHeight;
-    [SerializeField] float _stepSmooth;
-    [SerializeField] float _stepCheckDistance;
+    [SerializeField] float _stepHeight = 0.5f;
+    [SerializeField] float _stepSmooth = 15;
+    [SerializeField] float _stepCheckDistance = 0.6f;
 
     public Vector3 GetExtraMovement(float delta) {
       float move = 0;

@@ -15,17 +15,13 @@ It will (optionally) rotate the object to face the desired movement direction."
     public bool rotateToFaceMovement { get; set; } = false;
 
     ICharacterMotorPlugin[] _plugins;
+    void OnEnable() => _plugins = GetComponentsInChildren<ICharacterMotorPlugin>();
 
     public void Move(Vector2 input, float forwardModifier = 1) {
       if (input == Vector2.zero) return;
 
       transform.position += new Vector3(input.x, 0, input.y) * (moveSpeed * forwardModifier * Time.deltaTime);
       transform.rotation = Rotation(new Vector3(input.x, 0, input.y));
-    }
-
-    void OnEnable() => _plugins = GetComponentsInChildren<ICharacterMotorPlugin>();
-
-    void LateUpdate() {
       foreach (var plugin in _plugins) {
         transform.position += plugin.GetExtraMovement(Time.deltaTime);
       }
