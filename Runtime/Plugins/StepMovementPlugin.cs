@@ -2,22 +2,25 @@ using UnityEngine;
 
 namespace Dropecho {
   public class StepMovementPlugin : MonoBehaviour, ICharacterMotorPlugin {
+    [HelpBox(
+@"This plugin gives an upwards boost when a stair is detected to smooth out movement.
+It is typically only needed when using a rigid body instead of the built in char controller."
+    )]
     [SerializeField] float _stepHeight = 0.5f;
     [SerializeField] float _stepSmooth = 15;
     [SerializeField] float _stepCheckDistance = 0.6f;
 
-    public Vector3 GetExtraMovement(float delta) {
-      float move = 0;
-      move = GetStepMovement(0);
-      if (move == 0) {
-        move = GetStepMovement(-45);
-      }
-
-      if (move == 0) {
-        move = GetStepMovement(45);
-      }
+    public Vector3 GetTranslation(float delta) {
+      float move = GetStepMovement(0);
+      if (move == 0) move = GetStepMovement(-45);
+      if (move == 0) move = GetStepMovement(45);
 
       return new Vector3(0, move, 0);
+    }
+
+    public void GetMovement(float delta, out Vector3 translation, out Quaternion rotation) {
+      translation = GetTranslation(delta);
+      rotation = Quaternion.identity;
     }
 
     float GetStepMovement(float angle) {

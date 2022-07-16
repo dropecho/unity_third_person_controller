@@ -1,50 +1,70 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace Dropecho {
   public class JumpingMovementPlugin : MonoBehaviour, ICharacterMotorPlugin {
-    [Tooltip("Distance to detect ground from bottom of character.")]
-    [SerializeField] float _groundCheckDistance = 0.2f;
-    [Tooltip("Layers to detect as ground.")]
-    [SerializeField] LayerMask _groundLayers = 1;
-    [Tooltip("Layers to detect as ground.")]
+    [Tooltip("The amount of force to apply when jumping.")]
     [SerializeField] float _jumpForce = 10;
+    [Tooltip("Time to allow jumps after a fall starts.")]
+    [SerializeField] float _coyoteTime = 0.5f;
+    [Tooltip("Minimum time grounded before another jump.")]
+    [SerializeField] float _minGroundedTime = 0.1f;
 
-    bool _isJumping = false;
+    [SerializeField] UnityEvent OnJump;
+
+    readonly int _isGroundedHash = CharacterState.NameToHash("isGrounded");
+    readonly int _isJumpingHash = CharacterState.NameToHash("isJumping");
+    bool _isJumping {
+      get => _characterState.GetValue(_isJumpingHash);
+      set => _characterState.SetValue(_isJumpingHash, value);
+    }
     float _vel;
-    float _timeSinceJumpStarted;
-
+    float _currentJumpTime;
+    float _timeSinceLastGrounded;
     CharacterController _controller;
-    void OnEnable() => _controller = GetComponent<CharacterController>();
+    CharacterState _characterState;
 
-    public Vector3 GetExtraMovement(float delta) {
+    void OnEnable() {
+      _controller = GetComponent<CharacterController>();
+      _characterState = GetComponent<CharacterState>();
+    }
+
+    public void GetMovement(float delta, out Vector3 translation, out Quaternion rotation) {
+      translation = GetTranslation(delta);
+      rotation = Quaternion.identity;
+    }
+
+    public Vector3 GetTranslation(float delta) {
       if (isGrounded) {
-        if (_timeSinceJumpStarted > 0.2f) {
-          _vel = 0;
-          _timeSinceJumpStarted = 0;
+        _timeSinceLastGrounded = 0;
+        _vel = 0;
+        if (_currentJumpTime > _minGroundedTime) {
+          _currentJumpTime = 0;
           _isJumping = false;
-        } else if (Input.GetButton("Jump") && !_isJumping) {
-          _vel = _jumpForce;
-          _isJumping = true;
         }
+      } else {
+        _timeSinceLastGrounded += delta;
+      }
+
+      if (isAllowedToJump && Input.GetButton("Jump")) {
+        Debug.Log("wee jump");
+
+        _vel = _jumpForce;
+        _isJumping = true;
+        OnJump?.Invoke();
       }
 
       if (_isJumping) {
-        _timeSinceJumpStarted += delta;
-        _vel = Mathf.Lerp(_vel, 0, _timeSinceJumpStarted / _jumpForce);
+        _currentJumpTime += delta;
+        if (!isGrounded) {
+          _vel = Mathf.Lerp(_vel, 0, _currentJumpTime / _jumpForce);
+        }
       }
 
       return new Vector3(0, _vel * delta, 0);
     }
 
-    bool isGrounded => _controller != null
-      ? _controller.isGrounded
-      : Physics.CheckSphere(checkOrigin, _groundCheckDistance, _groundLayers, QueryTriggerInteraction.Ignore);
-
-    Vector3 checkOrigin => transform.position + transform.up * _groundCheckDistance / 2;
-
-    void OnDrawGizmosSelected() {
-      Gizmos.color = isGrounded ? Color.green : Color.red;
-      Gizmos.DrawWireSphere(transform.position + transform.up * _groundCheckDistance / 2, _groundCheckDistance);
-    }
+    bool isAllowedToJump => _timeSinceLastGrounded < _coyoteTime && !_isJumping;
+    bool isGrounded => _characterState.GetValue(_isGroundedHash);
   }
 }

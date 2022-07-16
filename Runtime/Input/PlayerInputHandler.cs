@@ -10,7 +10,7 @@ namespace Dropecho {
     camera = 3
   }
 
-  public class PlayerInputHandler : MonoBehaviour {
+  public class PlayerInputHandler : MonoBehaviour, IInputSource {
     public InputMode inputMode = InputMode.world;
 
 #if ENABLE_INPUT_SYSTEM
@@ -22,15 +22,12 @@ namespace Dropecho {
     public string sprintButton = "Fire3";
 #endif
 
-    ICharacterMotor _motor;
     Camera _camera;
     float _forwardModifier = 1;
     Vector2 _input = Vector2.zero;
+    Vector2 _processed = Vector2.zero;
 
-    void Awake() {
-      _motor = GetComponent<ICharacterMotor>();
-      _camera = Camera.main;
-    }
+    void Awake() => _camera = Camera.main;
 
     void OnEnable() {
 #if ENABLE_INPUT_SYSTEM
@@ -42,7 +39,7 @@ namespace Dropecho {
       sprint.action.performed += _ => _forwardModifier = 2;
       sprint.action.canceled += _ => _forwardModifier = 1;
 #endif
-      Cursor.lockState = CursorLockMode.Locked;
+      // Cursor.lockState = CursorLockMode.Locked;
     }
 
     void OnDisable() {
@@ -50,15 +47,6 @@ namespace Dropecho {
       movement.action.Disable();
       sprint.action.Disable();
 #endif
-    }
-
-    void Update() {
-#if !ENABLE_INPUT_SYSTEM
-      _input.x = Input.GetAxis(horizontalAxis);
-      _input.y = Input.GetAxis(verticalAxis);
-      _forwardModifier = Input.GetButton(sprintButton) ? 2f : 1f;
-#endif
-      _motor.Move(ProcessInput(_input), _forwardModifier);
     }
 
     Vector2 ProcessInput(Vector2 _input) {
@@ -81,6 +69,15 @@ namespace Dropecho {
       var relativeDir = worldToCamera * new Vector3(input.x, 0, input.y);
 
       return new Vector2(relativeDir.x, relativeDir.z);
+    }
+
+    public Vector2 GetInput() {
+#if !ENABLE_INPUT_SYSTEM
+      _input.x = Input.GetAxis(horizontalAxis);
+      _input.y = Input.GetAxis(verticalAxis);
+      _forwardModifier = Input.GetButton(sprintButton) ? 1.25f : 1f;
+#endif
+      return Vector2.ClampMagnitude(ProcessInput(_input), 1) * _forwardModifier;
     }
   }
 }

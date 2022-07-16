@@ -1,8 +1,7 @@
 using UnityEngine;
 
 namespace Dropecho {
-  [RequireComponent(typeof(Animator))]
-  public class RootMotionMotor : MonoBehaviour, ICharacterMotor {
+  public class RootMotionMotor : MonoBehaviour {
     public bool useRootMotion = true;
     public float moveSpeed = 5;
     public float stationaryTurnSpeed = 180;
@@ -10,26 +9,30 @@ namespace Dropecho {
 
     Animator _animator;
     ICharacterMotorPlugin[] _plugins;
+    CharacterController _controller;
+    IInputSource _input;
 
     void OnEnable() {
-      _animator = GetComponent<Animator>();
+      _animator = GetComponentInChildren<Animator>();
+      _input = GetComponentInChildren<IInputSource>();
+      _controller = GetComponent<CharacterController>();
       _plugins = GetComponentsInChildren<ICharacterMotorPlugin>();
     }
 
-    public void Move(Vector2 input, float forwardModifier = 1) {
+    void Update() {
+      var input = _input.GetInput();
       var move = transform.InverseTransformDirection(new Vector3(input.x, 0, input.y));
-      var turnAmount = Mathf.Clamp(Mathf.Atan2(move.x, move.z), -1, 1);
+      var forward = move.z;
+      var horizontal = Mathf.Clamp(Mathf.Atan2(move.x, move.z), -1, 1);
 
-      ApplyAdditionalRotation(move.z, turnAmount);
+      ApplyAdditionalRotation(forward, horizontal);
 
       if (!useRootMotion) {
-        transform.position += moveSpeed * forwardModifier * Time.deltaTime * new Vector3(input.x, 0, input.y);
-        _animator.SetFloat("horizontal", turnAmount);
-        _animator.SetFloat("forward", move.z * forwardModifier);
-      } else {
-        _animator.SetFloat("horizontal", turnAmount, 0.1f, Time.deltaTime);
-        _animator.SetFloat("forward", move.z * forwardModifier, 0.1f, Time.deltaTime);
+        SetPosition(moveSpeed * Time.deltaTime * new Vector3(input.x, 0, input.y));
       }
+
+      _animator.SetFloat("horizontal", horizontal, 0.1f, Time.deltaTime);
+      _animator.SetFloat("forward", forward, 0.1f, Time.deltaTime);
     }
 
     void ApplyAdditionalRotation(float fwd, float turnAmount) {
@@ -37,16 +40,27 @@ namespace Dropecho {
       transform.Rotate(0, turnAmount * turnSpeed * Time.deltaTime, 0);
     }
 
+    void SetPosition(Vector3 translation) {
+      if (_controller == null) {
+        transform.position += translation;
+      } else {
+        _controller.Move(translation);
+      }
+    }
+
     void OnAnimatorMove() {
+      Vector3 translation = Vector3.zero;
       if (Time.deltaTime > 0 && useRootMotion) {
         var positionDelta = _animator.deltaPosition;
         positionDelta.y = 0;
-        transform.position += positionDelta;
+        translation += positionDelta;
       }
 
       foreach (var plugin in _plugins) {
-        transform.position += plugin.GetExtraMovement(Time.deltaTime);
+        translation += plugin.GetTranslation(Time.deltaTime);
       }
+
+      SetPosition(translation);
     }
   }
 }

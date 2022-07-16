@@ -11,7 +11,12 @@ namespace Dropecho {
 
     float _vel;
 
-    public Vector3 GetExtraMovement(float delta) => isGrounded
+    public void GetMovement(float delta, out Vector3 translation, out Quaternion rotation) {
+      translation = GetTranslation(delta);
+      rotation = Quaternion.identity;
+    }
+
+    public Vector3 GetTranslation(float delta) => isGrounded
       ? new Vector3(0, _vel = 0, 0)
       : new Vector3(0, (_vel += _gravity * delta) * delta, 0);
 

@@ -2,27 +2,30 @@ using UnityEngine;
 
 namespace Dropecho {
   [RequireComponent(typeof(CharacterController))]
-  public class CharacterControllerMotor : MonoBehaviour, ICharacterMotor {
+  public class CharacterControllerMotor : MonoBehaviour {
     public float moveSpeed = 4f;
     public float turnSpeed = 200f;
 
     ICharacterMotorPlugin[] _plugins;
     CharacterController _controller;
+    IInputSource _input;
 
     void OnEnable() {
       _plugins = GetComponentsInChildren<ICharacterMotorPlugin>();
       _controller = GetComponent<CharacterController>();
+      _input = GetComponent<IInputSource>();
     }
 
-    public void Move(Vector2 input, float forwardModifier = 1) {
+    public void Update() {
+      var input = _input.GetInput();
       var input3d = Vector3.ClampMagnitude(new Vector3(input.x, 0, input.y), 1);
-      transform.rotation = Rotation(input3d);
 
-      var translation = moveSpeed * forwardModifier * Time.deltaTime * input3d;
+      var translation = moveSpeed * Time.deltaTime * input3d;
       foreach (var plugin in _plugins) {
-        translation += plugin.GetExtraMovement(Time.deltaTime);
+        translation += plugin.GetTranslation(Time.deltaTime);
       }
       _controller.Move(translation);
+      transform.rotation = Rotation(input3d);
     }
 
     private Quaternion Rotation(Vector3 input) {

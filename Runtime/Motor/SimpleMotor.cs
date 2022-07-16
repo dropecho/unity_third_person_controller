@@ -1,7 +1,7 @@
 using UnityEngine;
 
 namespace Dropecho {
-  public class SimpleMotor : MonoBehaviour, ICharacterMotor {
+  public class SimpleMotor : MonoBehaviour {
     [field: HelpBox(
 @"This motor moves the object in world space based on input.
 It will (optionally) rotate the object to face the desired movement direction."
@@ -15,16 +15,23 @@ It will (optionally) rotate the object to face the desired movement direction."
     public bool rotateToFaceMovement { get; set; } = false;
 
     ICharacterMotorPlugin[] _plugins;
-    void OnEnable() => _plugins = GetComponentsInChildren<ICharacterMotorPlugin>();
+    IInputSource _input;
+    
+    void OnEnable() {
+      _plugins = GetComponentsInChildren<ICharacterMotorPlugin>();
+      _input = GetComponentInChildren<IInputSource>();
+    }
 
-    public void Move(Vector2 input, float forwardModifier = 1) {
-      if (input == Vector2.zero) return;
+    void Update() {
+      var input = _input.GetInput();
 
-      transform.position += new Vector3(input.x, 0, input.y) * (moveSpeed * forwardModifier * Time.deltaTime);
-      transform.rotation = Rotation(new Vector3(input.x, 0, input.y));
+      var translation = new Vector3(input.x, 0, input.y) * (moveSpeed * Time.deltaTime);
       foreach (var plugin in _plugins) {
-        transform.position += plugin.GetExtraMovement(Time.deltaTime);
+        translation += plugin.GetTranslation(Time.deltaTime);
       }
+      transform.position += translation;
+
+      transform.rotation = Rotation(new Vector3(input.x, 0, input.y));
     }
 
     private Quaternion Rotation(Vector3 input) {
